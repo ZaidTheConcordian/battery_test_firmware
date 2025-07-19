@@ -2,6 +2,7 @@
 #define CMD_STRT 0xB3
 
 #define CMD_PING 0x00
+#define CMD_ID 0x01
 #define CMD_DATA 0x02
 #define CMD_STND 0x04
 #define CMD_DISC 0x05
@@ -14,19 +15,20 @@
 uint8_t rxBuffer[RX_CMD_LENGTH];
 
 enum BatteryBenchState{
-	Standby,
-	Charge,
-	Discharge
+  Standby,
+  Charge,
+  Discharge
 } bench_state;
 
 enum CompletionStatus{
   Success,
-	Fail,
-	InProgress
+  Fail,
+  InProgress
 } completion_status;
 
 enum Command{
   Ping,
+  ID,
   RequestData,
   SetStandBy,
   SetDischarge,
@@ -52,8 +54,15 @@ void loop() {
   switch (Incomming){
 
       case Command::Ping:
-        SendBenchStatus();
+        if (rxBuffer[2] = 0xFF){
+          SetBenchId(); 
+        }else {
+          MirrorPing(): 
+        }
+       
+        //SendBenchStatus();
         break;
+         
 
       case Command::RequestData:
         SendData();
@@ -116,7 +125,7 @@ Command ReadCommand(){
 
   if(rxBuffer[1] == CMD_PING)
     return Command::Ping;
-
+    
   if(rxBuffer[1] == CMD_DATA)
     return Command::RequestData;
   
@@ -135,6 +144,23 @@ Command ReadCommand(){
   return Command::BadCommand; //invalid Command id
 }
 
+Void MirrorPing(){
+  //Respond to the Bench, confirming the ping
+  IDeas = rxBuffer[2];
+  byte buf[4] = {CMD_STRT , CMD_PING , IDeas,  CMD_STRT ^ CMD_ID ^ IDeas};
+  Serial.write(buf, 4);
+  //Need to update the GUI
+  
+}
+Void SetBenchId(){
+  uint8_t IDeas = 1; //All benches will have id = 1 until communication with gui is figured out
+  //Set the id
+  byte buf[4] = {CMD_STRT , CMD_ID , IDeas,  CMD_STRT ^ CMD_ID ^ IDeas};
+  Serial.write(buf,4);
+  //Need to upated the gui
+  
+}
+
 void SendBenchStatus(){
   
   byte buf[3] = { CMD_STRT , bench_state  , CMD_STRT ^ bench_state };
@@ -142,7 +168,6 @@ void SendBenchStatus(){
   Serial.write(buf, 3);
 
 }
-
 void SendCompletionStatus(){
 
   byte buf[4] = { CMD_STRT , bench_state , completion_status , CMD_STRT ^ bench_state ^ completion_status };
